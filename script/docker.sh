@@ -1,12 +1,12 @@
 #!/bin/bash
 set -ex
 
-if [ $# -lt 2 ]; then
-    echo "docker.sh  <IMAGE_NAME> <DOCKER_NAME> "
+if [ $# -lt 1 ]; then
+    echo "docker.sh sh<DOCKER_NAME> "
     exit 1
 fi
-IMAGE_NAME=$1
-DOCKER_NAME=$2
+IMAGE_NAME="ubuntu:22.04"
+DOCKER_NAME=$1
 PROJECT_NAME=$(basename "$(pwd)")
 PROJECT_DIR=$(realpath "$(pwd)")
 
@@ -17,13 +17,13 @@ else
    if [ -e $DOCKER_FILE ]; then
     rm $DOCKER_FILE
   fi
-  echo "FROM ubuntu:18.04" >> $DOCKER_FILE
+  echo "FROM ubuntu:22.04" >> $DOCKER_FILE
   echo "RUN sed -i s@/archive.ubuntu.com/@/mirrors.aliyun.com/@g /etc/apt/sources.list" >> $DOCKER_FILE
   echo "RUN sed -i s@/security.ubuntu.com/@/mirrors.aliyun.com/@g /etc/apt/sources.list" >> $DOCKER_FILE
   echo "RUN mkdir /$PROJECT_NAME" >> $DOCKER_FILE
   echo "WORKDIR /$PROJECT_NAME" >> $DOCKER_FILE
   echo "ENV TZ=Asia/Shanghai" >> $DOCKER_FILE
-  echo "RUN apt-get update && apt-get install -y gcc && apt-get install -y wget" >> $DOCKER_FILE
+  echo "RUN apt-get update && apt-get install -y gcc && apt-get install -y wget && apt-get install -y vim" >> $DOCKER_FILE
   docker build -t $IMAGE_NAME $PROJECT_DIR
 fi
 
@@ -38,7 +38,10 @@ MOUNTS="-v $HOME:$HOME -v $PROJECT_DIR:/$PROJECT_NAME:rw $MOUNTS"
 
 CMD_LINE="/bin/bash"
 
-OPTIONS="-it --net=host --ulimit core=-1 --security-opt seccomp=unconfined --detach-keys=ctrl-i,c"
+display_idx=$(echo $DISPLAY|awk -F ':' '{print $2}')
+options="-e DOCKER_CONTAINER=$DOCKER_NAME -e DOCKER_URL=$IMAGE_NAME -e V -e HOST_USER=$USER -e DISPLAY=unix:${display_idx}"
+
+OPTIONS="$options -it --net=host --ulimit core=-1 --security-opt seccomp=unconfined --detach-keys=ctrl-i,c"
 
 DC=docker
 if [ 'root' != `whoami` ];then
